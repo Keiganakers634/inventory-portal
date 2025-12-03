@@ -1063,6 +1063,7 @@
     // ================================================================
     const INVENTORY_URL = "inventory.json"; // <-- CSV converted to JSON lives here
     const IMAGE_BASE_PATH = "images/"; // base folder for images
+    const FULL_IMAGE_BASE_PATH = "images-full/"; // folder for full-size images (modal only)
 
     // Equipment types shown as chips at the top.
     // To add more, just extend this array.
@@ -1325,6 +1326,27 @@
       tryNext();
     }
 
+    /**
+     * Given a thumbnail src (usually under /images/), return the corresponding
+     * full-size image path under /images-full/.
+     * If no match is found, we just return the original src.
+     */
+    function getFullImageSrcFromThumb(src) {
+      if (!src) return src;
+
+      // Handle absolute or relative URLs that contain the IMAGE_BASE_PATH
+      if (src.includes("/" + IMAGE_BASE_PATH)) {
+        return src.replace("/" + IMAGE_BASE_PATH, "/" + FULL_IMAGE_BASE_PATH);
+      }
+      if (src.includes(IMAGE_BASE_PATH)) {
+        return src.replace(IMAGE_BASE_PATH, FULL_IMAGE_BASE_PATH);
+      }
+
+      // Fallback: return the original src
+      return src;
+    }
+
+    
     // ================================================================
     // RENDERING
     // ================================================================
@@ -1616,11 +1638,15 @@
 
     function openImageModal(src, altText) {
       if (!imageModalBackdrop || !imageModalImg) return;
-      imageModalImg.src = src;
+
+      const fullSrc = getFullImageSrcFromThumb(src);
+      imageModalImg.src = fullSrc;
       imageModalImg.alt = altText || "Item image";
+
       imageModalBackdrop.classList.add("active");
       imageModalBackdrop.setAttribute("aria-hidden", "false");
     }
+
 
     function closeImageModal() {
       if (!imageModalBackdrop || !imageModalImg) return;
