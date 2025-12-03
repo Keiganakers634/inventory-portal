@@ -1699,17 +1699,23 @@
 
         // Send to Pipedream
         try {
-          await fetch(CLAIM_WEBHOOK_URL, {
+          const response = await fetch(CLAIM_WEBHOOK_URL, {
             method: "POST",
+            mode: "cors",
             headers: {
-              "Content-Type": "application/json",
+              "Content-Type": "application/json"
             },
-            body: JSON.stringify(payload),
+            body: JSON.stringify(payload)
           });
+        
+          if (!response.ok) {
+            throw new Error("Failed to submit claim.");
+          }
         } catch (postError) {
           // Even if POST fails, show a generic message; Pipedream logs can be checked separately.
           console.error("Error posting claim to webhook:", postError);
         }
+
 
         // Success UI — close claim modal, open info modal, then reload after 5s
         closeClaimModal();
