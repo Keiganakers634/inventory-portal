@@ -23,8 +23,8 @@
              RAM
              Storage
              ID
-             " Price " (optional)
-             EmployeePricing  <-- used as the price shown to employees
+             " Price " (full retail, optional)
+             EmployeePricing  <-- employee discount price
              Available        <-- "y" or "n"
       - /images/monitor.png
       - /images/AIO.png
@@ -36,9 +36,13 @@
 
     This file:
       - Lets users browse inventory by equipment type
-      - Shows cards including Brand, Model, Size, EmployeePricing
+      - Shows cards including Brand, Model, Size, full Price and EmployeePricing
       - Allows employees to claim an item
-      - Checks latest availability every time they attempt to claim / submit
+      - Checks latest availability:
+          * on initial load,
+          * when "Claim this item" is clicked, and
+          * when "Submit" is clicked,
+        each time re-reading inventory.json and matching by ID
       - Sends all non-blank inventory values + claimer info to your Pipedream URL
 
     To customize:
@@ -397,6 +401,20 @@
       border: 1px solid rgba(148, 163, 184, 0.5);
       color: var(--text-soft);
       background: rgba(15, 23, 42, 0.9);
+    }
+
+    .price-block {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+    }
+
+    .item-price-full {
+      font-size: 0.78rem;
+      text-decoration: line-through;
+      color: #fca5a5;
+      opacity: 0.9;
     }
 
     .item-price {
@@ -806,7 +824,6 @@
       }
     }
 
-    /* Small utility */
     .mono {
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
         "Liberation Mono", "Courier New", monospace;
@@ -1078,20 +1095,17 @@
     }
 
     /**
-     * Get displayed price label from EmployeePricing (or fallback price fields).
+     * Get the employee-facing price from EmployeePricing (or fallbacks).
      * Your CSV uses EmployeePricing and the values already include "$".
      */
-    function getItemPrice(item) {
+    function getEmployeePrice(item) {
       const raw = getField(
         item,
         "EmployeePricing",   // <-- your CSV header
         "EmployeePrice",
         "Employee Price",
         "employeePrice",
-        "employee_price",
-        " Price ",           // safety in case you ever switch columns
-        "Price",
-        "price"
+        "employee_price"
       );
 
       if (!raw) return "";
@@ -1101,6 +1115,27 @@
 
       // If the string starts with "$", use as-is.
       // Otherwise, prepend "$".
+      return trimmed.startsWith("$") ? trimmed : `$${trimmed}`;
+    }
+
+    /**
+     * Get the full/original price (for strike-through) from " Price " / Price.
+     */
+    function getFullPrice(item) {
+      const raw = getField(
+        item,
+        " Price ",      // <-- your CSV has this with spaces
+        "FullPrice",
+        "Full Price",
+        "Price",
+        "price"
+      );
+
+      if (!raw) return "";
+
+      const trimmed = String(raw).trim();
+      if (!trimmed) return "";
+
       return trimmed.startsWith("$") ? trimmed : `$${trimmed}`;
     }
 
@@ -1228,7 +1263,7 @@
       for (const item of allItems) {
         const typeId = getNormalizedTypeId(item);
         if (typeId && counts.hasOwnProperty(typeId)) {
-          counts[type.id] += 1;
+          counts[typeId] += 1; // <-- fixed bug here (typeId instead of undefined type)
         }
       }
       // Assign counts into chip badges
@@ -1248,7 +1283,7 @@
      *   - Brand (top label)
      *   - Model + Size
      *   - Tags including Size, equipment type, availability
-     *   - EmployeePricing (price) on the right
+     *   - Full price (strike-through) and EmployeePricing side-by-side
      */
     function renderItems() {
       itemsGridEl.innerHTML = "";
@@ -1285,7 +1320,8 @@
         const model = getField(item, "Model", "model");
         const size = getField(item, "Size", "size");
         const title = [brand, model, size].filter(Boolean).join(" ");
-        const price = getItemPrice(item);
+        const employeePrice = getEmployeePrice(item);
+        const fullPrice = getFullPrice(item);
 
         // Build card
         const card = document.createElement("article");
@@ -1316,8 +1352,19 @@
                   ${typeRaw ? `<span class="item-tag">${typeRaw}</span>` : ""}
                 </div>
                 ${
-                  price
-                    ? `<div class="item-price">${price}</div>`
+                  fullPrice || employeePrice
+                    ? `<div class="price-block">
+                         ${
+                           fullPrice
+                             ? `<div class="item-price-full">${fullPrice}</div>`
+                             : ""
+                         }
+                         ${
+                           employeePrice
+                             ? `<div class="item-price">${employeePrice}</div>`
+                             : ""
+                         }
+                       </div>`
                     : `<div class="item-price" style="opacity:0.7;">Price TBD</div>`
                 }
               </div>
@@ -1399,7 +1446,8 @@
       claimEmailInput.value = "";
 
       const title = getItemTitle(item);
-      const price = getItemPrice(item);
+      const employeePrice = getEmployeePrice(item);
+      const fullPrice = getFullPrice(item);
       claimItemNameEl.textContent = title || "this item";
 
       const id = getItemId(item);
@@ -1407,7 +1455,12 @@
       if (title) subtitleText += title;
       else subtitleText += "this item";
       if (id) subtitleText += ` (ID: ${id})`;
-      if (price) subtitleText += ` for ${price}.`;
+
+      const priceLabel = employeePrice || fullPrice;
+      if (priceLabel) {
+        subtitleText += ` for ${priceLabel}.`;
+      }
+
       claimModalSubTitle.innerHTML = subtitleText;
 
       claimModalBackdrop.classList.add("active");
@@ -1483,7 +1536,9 @@
     }
 
     /**
-     * Refresh the entire inventory (used for initial load).
+     * Initial load:
+     *  - fetch inventory.json
+     *  - render items (checking Available field to gray out "n")
      */
     async function loadInitialInventory() {
       try {
@@ -1511,12 +1566,13 @@
     /**
      * Fetch the latest inventory and return the item matching the given ID.
      * Used for concurrency checking on claim/submit.
+     * This function re-reads inventory.json every time and re-renders.
      */
     async function refreshAndGetItemById(itemId) {
       const latestInventory = await fetchInventory();
       allItems = latestInventory; // update in-memory reference
       updateTypeCounts();
-      renderItems(); // ensure UI stays in sync
+      renderItems(); // keep UI in sync with latest availability
 
       return latestInventory.find(
         (item) => String(getItemId(item)) === String(itemId)
@@ -1538,7 +1594,7 @@
 
     /**
      * Handle "Claim this item" button click.
-     * 1) Re-load inventory and check if item is still available.
+     * 1) Re-load inventory and check if item is still available (by ID).
      * 2) If claimed, show "someone else got it" modal and reload.
      * 3) If available, open the claim modal.
      */
@@ -1584,7 +1640,7 @@
     /**
      * Handle final "Submit" in the claim modal.
      * 1) Validate inputs.
-     * 2) Re-load inventory & confirm item is still available.
+     * 2) Re-load inventory & confirm item is still available (by ID).
      * 3) POST claim details to Pipedream endpoint.
      * 4) Show confirmation & reload.
      */
@@ -1616,7 +1672,7 @@
       const itemId = getItemId(currentItemForClaim);
 
       try {
-        // Re-check latest availability
+        // Re-check latest availability (re-read inventory.json)
         const latestItem = await refreshAndGetItemById(itemId);
         if (!latestItem || !isItemAvailable(latestItem)) {
           closeClaimModal();
