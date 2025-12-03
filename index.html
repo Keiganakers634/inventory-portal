@@ -1683,8 +1683,22 @@
     
       const data = await response.json();
     
-      // JSONBin v3 returns { record: <your-data>, metadata: { ... } }
-      const record = data && data.record ? data.record : data;
+      // JSONBin v3 usually returns:
+      // { record: <storedData>, metadata: { ... } }
+      // In your case, <storedData> should be the array.
+      // But we also defensively handle the old nested shape.
+      let record = null;
+    
+      if (Array.isArray(data?.record?.record)) {
+        // Old nested shape: { record: { record: [ ... ] }, metadata: { ... } }
+        record = data.record.record;
+      } else if (Array.isArray(data?.record)) {
+        // Normal shape: { record: [ ... ], metadata: { ... } }
+        record = data.record;
+      } else if (Array.isArray(data)) {
+        // Fallback: bin directly stores the array
+        record = data;
+      }
     
       if (!Array.isArray(record)) {
         throw new Error("Inventory payload must be a JSON array of items");
@@ -1692,6 +1706,7 @@
     
       return record;
     }
+
 
 
     /**
