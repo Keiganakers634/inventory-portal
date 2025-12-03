@@ -271,6 +271,7 @@
       display: grid;
       grid-template-columns: minmax(0, 1fr);
       gap: 10px;
+      align-items: flex-start;
     }
 
     @media (min-width: 600px) {
@@ -321,8 +322,10 @@
       display: flex;
       flex-direction: column;
       min-height: 170px;
-      transition: transform var(--transition-med),
-        box-shadow var(--transition-med), border-color var(--transition-med),
+      transition:
+        transform var(--transition-med),
+        box-shadow var(--transition-med),
+        border-color var(--transition-med),
         background var(--transition-med);
     }
 
@@ -336,6 +339,9 @@
       display: flex;
       gap: 10px;
       padding: 10px 10px 8px;
+      transition:
+        padding var(--transition-med),
+        gap var(--transition-med);
     }
 
     .item-image-wrapper {
@@ -349,6 +355,10 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      transition:
+        width var(--transition-med),
+        height var(--transition-med),
+        transform var(--transition-med);
     }
 
     .item-image {
@@ -365,6 +375,7 @@
       gap: 4px;
       min-width: 0;
       flex: 1;
+      transition: transform var(--transition-med);
     }
 
     .item-brand {
@@ -378,6 +389,7 @@
       font-size: 0.9rem;
       font-weight: 500;
       color: var(--text);
+      transition: font-size var(--transition-med);
     }
 
     .item-meta-row {
@@ -464,11 +476,11 @@
       padding: 0 10px;
       overflow: hidden;
       border-top: 1px dashed rgba(148, 163, 184, 0.4);
-      transition: max-height 220ms ease, padding 220ms ease;
+      transition: max-height 240ms ease, padding 240ms ease;
     }
 
     .item-card.expanded .item-details {
-      max-height: 220px; /* enough for details & button */
+      max-height: 260px; /* enough for details & button */
       padding: 6px 10px 10px;
     }
 
@@ -571,6 +583,36 @@
 
     .item-card.claimed .item-expand-hint {
       opacity: 0.5;
+    }
+
+    /* Expanded card layout (desktop focus) */
+    @media (min-width: 768px) {
+      .item-card.expanded {
+        grid-column: 1 / -1;            /* span full row */
+        min-height: 220px;
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-soft);
+        border-color: var(--accent-strong);
+      }
+
+      .item-card.expanded:hover {
+        transform: translateY(-4px);    /* avoid double-lift on hover */
+      }
+
+      .item-card.expanded .item-card-main {
+        padding: 14px 16px 10px;
+        gap: 18px;
+      }
+
+      .item-card.expanded .item-image-wrapper {
+        width: 130px;
+        height: 130px;
+        transform: translateY(0);
+      }
+
+      .item-card.expanded .item-model {
+        font-size: 1rem;
+      }
     }
 
     /* Modals */
@@ -1041,7 +1083,7 @@
      */
     function getField(item, ...candidates) {
       for (const key of candidates) {
-        if (item.hasOwnProperty(key) && item[key] != null && item[key] !== "") {
+        if (Object.prototype.hasOwnProperty.call(item, key) && item[key] != null && item[key] !== "") {
           return item[key];
         }
       }
@@ -1263,7 +1305,7 @@
       for (const item of allItems) {
         const typeId = getNormalizedTypeId(item);
         if (typeId && counts.hasOwnProperty(typeId)) {
-          counts[typeId] += 1; // <-- fixed bug here (typeId instead of undefined type)
+          counts[typeId] += 1;
         }
       }
       // Assign counts into chip badges
@@ -1715,7 +1757,6 @@
           // Even if POST fails, show a generic message; Pipedream logs can be checked separately.
           console.error("Error posting claim to webhook:", postError);
         }
-
 
         // Success UI — close claim modal, open info modal, then reload after 5s
         closeClaimModal();
