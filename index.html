@@ -589,31 +589,45 @@
     @media (min-width: 768px) {
       .item-card.expanded {
         grid-column: 1 / -1;            /* span full row */
-        min-height: 220px;
+        min-height: 260px;
         transform: translateY(-4px);
         box-shadow: var(--shadow-soft);
         border-color: var(--accent-strong);
       }
-
+    
       .item-card.expanded:hover {
         transform: translateY(-4px);    /* avoid double-lift on hover */
       }
-
+    
+      /* Make the expanded layout vertical, with a big centered image */
       .item-card.expanded .item-card-main {
-        padding: 14px 16px 10px;
+        padding: 18px 24px 14px;
         gap: 18px;
+        flex-direction: column;
+        align-items: center;            /* center image + text */
       }
-
+    
       .item-card.expanded .item-image-wrapper {
-        width: 130px;
-        height: 130px;
-        transform: translateY(0);
+        width: 260px;                   /* much wider image */
+        height: 160px;
       }
-
+    
+      .item-card.expanded .item-main-text {
+        align-items: center;
+        text-align: center;
+      }
+    
+      .item-card.expanded .item-meta-row {
+        width: 100%;
+        justify-content: space-between;
+        flex-wrap: wrap;
+      }
+    
       .item-card.expanded .item-model {
-        font-size: 1rem;
+        font-size: 1.05rem;
       }
     }
+
 
     /* Modals */
     .modal-backdrop {
