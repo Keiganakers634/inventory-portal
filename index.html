@@ -1663,8 +1663,10 @@
      * Fetch inventory.json from server.
      */
     async function fetchInventory() {
-      const response = await fetch(INVENTORY_URL, {
-        cache: "no-cache",
+      const url = `${INVENTORY_URL}?t=${Date.now()}`; // cache-busting query param
+    
+      const response = await fetch(url, {
+        cache: "no-store",
       });
       if (!response.ok) {
         throw new Error(`Failed to load inventory (${response.status})`);
