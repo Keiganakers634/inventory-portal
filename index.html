@@ -662,6 +662,28 @@
       position: relative;
     }
 
+    /* Image preview modal */
+    .image-modal {
+      max-width: 720px;
+    }
+
+    .image-modal-body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding-top: 8px;
+    }
+
+    #image-modal-img {
+      max-width: 100%;
+      max-height: 70vh;
+      border-radius: 12px;
+      border: 1px solid var(--border-subtle);
+      object-fit: contain;
+      background: #020617;
+    }
+
+
     @media (min-width: 480px) {
       .modal {
         padding: 20px 22px 20px;
@@ -1015,6 +1037,25 @@
       </div>
     </div>
   </div>
+  <!-- Image preview modal -->
+  <div class="modal-backdrop" id="image-modal-backdrop" aria-hidden="true">
+    <div class="modal image-modal" role="dialog" aria-modal="true" aria-labelledby="image-modal-title">
+      <div class="modal-header">
+        <div class="modal-title" id="image-modal-title">Item photo</div>
+        <button
+          type="button"
+          class="modal-close-btn"
+          id="image-modal-close-btn"
+          aria-label="Close image preview"
+        >
+          ✕
+        </button>
+      </div>
+      <div class="modal-body image-modal-body">
+        <img id="image-modal-img" alt="Full-size item image" />
+      </div>
+    </div>
+  </div>
 
   <script>
     // ================================================================
@@ -1086,7 +1127,10 @@
     const infoModalTitle = document.getElementById("info-modal-title");
     const infoModalContent = document.getElementById("info-modal-content");
     const infoModalOkBtn = document.getElementById("info-modal-ok-btn");
-
+    const imageModalBackdrop = document.getElementById("image-modal-backdrop");
+    const imageModalImg = document.getElementById("image-modal-img");
+    const imageModalCloseBtn = document.getElementById("image-modal-close-btn");
+    
     // ================================================================
     // HELPER FUNCTIONS: Data access / normalization
     // ================================================================
@@ -1570,6 +1614,21 @@
       infoModalBackdrop.setAttribute("aria-hidden", "true");
     }
 
+    function openImageModal(src, altText) {
+      if (!imageModalBackdrop || !imageModalImg) return;
+      imageModalImg.src = src;
+      imageModalImg.alt = altText || "Item image";
+      imageModalBackdrop.classList.add("active");
+      imageModalBackdrop.setAttribute("aria-hidden", "false");
+    }
+
+    function closeImageModal() {
+      if (!imageModalBackdrop || !imageModalImg) return;
+      imageModalBackdrop.classList.remove("active");
+      imageModalBackdrop.setAttribute("aria-hidden", "true");
+      imageModalImg.src = "";
+    }
+
     // ================================================================
     // DATA LOADING
     // ================================================================
@@ -1816,6 +1875,19 @@
 
     // Item cards: expand/collapse & claim button
     itemsGridEl.addEventListener("click", (event) => {
+      // If clicking the image on an expanded card, open the image modal
+      const imgEl = event.target.closest(".item-image");
+      if (imgEl) {
+        const card = imgEl.closest(".item-card");
+        if (card && card.classList.contains("expanded")) {
+          event.stopPropagation();
+          openImageModal(imgEl.src, imgEl.alt || "Item image");
+          return;
+        }
+        // If the card is not yet expanded, let the normal click logic
+        // run and just expand the card.
+      }
+
       const claimBtn = event.target.closest(".claim-btn");
       if (claimBtn) {
         event.stopPropagation();
@@ -1871,6 +1943,17 @@
       }
     });
 
+    imageModalBackdrop.addEventListener("click", (event) => {
+      if (event.target === imageModalBackdrop) {
+        closeImageModal();
+      }
+    });
+
+    imageModalCloseBtn.addEventListener("click", () => {
+      closeImageModal();
+    });
+
+    
     // Basic Escape key handling to close modals
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape") {
@@ -1878,6 +1961,8 @@
           closeClaimModal();
         } else if (infoModalBackdrop.classList.contains("active")) {
           closeInfoModal();
+        } else if (imageModalBackdrop.classList.contains("active")) {
+          closeImageModal();
         }
       }
     });
