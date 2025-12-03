@@ -1061,9 +1061,17 @@
     // ================================================================
     // CONFIGURATION
     // ================================================================
-    const INVENTORY_URL = "inventory.json"; // <-- CSV converted to JSON lives here
+    const INVENTORY_URL =
+      "https://api.jsonbin.io/v3/b/6930af4443b1c97be9d5f2f3/latest"; // JSONBin endpoint
     const IMAGE_BASE_PATH = "images/"; // base folder for images
     const FULL_IMAGE_BASE_PATH = "images-full/"; // folder for full-size images (modal only)
+    
+    // JSONBin auth headers (⚠ these are visible to anyone who can see the page source)
+    const JSONBIN_HEADERS = {
+      "X-Master-Key": "$2a$10$gP/pHtjcvuTYA4hrwnrjs.1lzggrBo859SIUtJLqHFuivlZ4wNP82",
+      "X-ACCESS-KEY": "$2a$10$ALp7G2o1BOTQghlOa2V5NevG/.iYUICeMqAxkHEZHauOV16BVR2sG",
+    };
+
 
     // Equipment types shown as chips at the top.
     // To add more, just extend this array.
@@ -1663,20 +1671,28 @@
      * Fetch inventory.json from server.
      */
     async function fetchInventory() {
-      const url = `${INVENTORY_URL}?t=${Date.now()}`; // cache-busting query param
-    
-      const response = await fetch(url, {
-        cache: "no-store",
+      const response = await fetch(INVENTORY_URL, {
+        method: "GET",
+        headers: JSONBIN_HEADERS,
+        cache: "no-store", // always hit network; don't use browser cache
       });
+    
       if (!response.ok) {
         throw new Error(`Failed to load inventory (${response.status})`);
       }
-      const json = await response.json();
-      if (!Array.isArray(json)) {
-        throw new Error("inventory.json must be a JSON array of items");
+    
+      const data = await response.json();
+    
+      // JSONBin v3 returns { record: <your-data>, metadata: { ... } }
+      const record = data && data.record ? data.record : data;
+    
+      if (!Array.isArray(record)) {
+        throw new Error("Inventory payload must be a JSON array of items");
       }
-      return json;
+    
+      return record;
     }
+
 
     /**
      * Initial load:
