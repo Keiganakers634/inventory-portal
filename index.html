@@ -122,42 +122,49 @@
     .header-row {
       display: flex;
       flex-direction: column;
-      gap: 8px;
-      margin-bottom: 24px;
+      align-items: center;      /* center horizontally */
+      text-align: center;       /* center text inside */
+      gap: 12px;                /* a little more breathing room */
+      margin-bottom: 32px;      /* more space below header */
     }
 
+    /* You can delete the old 640px media rule entirely,
+       or leave this noop version if you like: */
     @media (min-width: 640px) {
       .header-row {
-        flex-direction: row;
-        align-items: center;
-        justify-content: space-between;
+        flex-direction: column; /* keep it stacked & centered on larger screens */
       }
     }
 
     .title-block {
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      align-items: center;   /* center content */
+      gap: 8px;              /* a bit more spacing between title/subtitles */
+      max-width: 44rem;      /* wider for multi-line subtitles */
+      margin: 0 auto;
     }
 
     .app-title {
-      font-size: 7.75rem;
+      font-size: 2.6rem;        /* big, but sane on mobile */
       letter-spacing: 0.02em;
       font-weight: 650;
       display: inline-flex;
       align-items: center;
-      gap: 8px;
+      justify-content: center;  /* center text + badge together */
+      gap: 10px;
     }
+
 
     @media (min-width: 768px) {
       .app-title {
-        font-size: 3.25rem;
+        font-size: 3.2rem;      /* larger on desktop */
       }
     }
     
     .app-title-badge {
-      font-size: 0.7rem;
-      padding: 2px 7px;
+      font-size: 0.8rem;        /* was 0.7rem */
+      padding: 3px 9px;         /* slightly larger pill */
       border-radius: 999px;
       border: 1px solid rgba(56, 189, 248, 0.4);
       color: var(--accent-strong);
@@ -170,29 +177,35 @@
       letter-spacing: 0.08em;
     }
 
+
     .lead-subtitle {
-      font-size: 1.15rem;
+      font-size: 1.25rem;   /* was 1.15rem */
       font-weight: 500;
+      color: var(--text);   /* a bit brighter to stand out */
     }
+
     
     .app-subtitle {
-      font-size: 1.05rem;
+      font-size: 1.12rem;   /* was 1.05rem */
       color: var(--text-soft);
-      max-width: 36rem;
+      max-width: 40rem;     /* a bit wider paragraph width */
+      line-height: 1.7;     /* more comfortable to read */
+      margin: 0.2rem auto;  /* center + add vertical rhythm */
+      text-align: center;   /* center all subtitle lines */
     }
 
     .pill-notice {
-      align-self: flex-start;
-      margin-top: 1.5rem;
-      font-size: 0.98rem;
+      align-self: center;                 /* center under subtitles */
+      margin-top: 2rem;                   /* more separation from copy */
+      font-size: 1rem;                    /* was 0.98rem */
       color: var(--text-soft);
       border-radius: 999px;
       border: 1px dashed rgba(148, 163, 184, 0.7);
-      padding: 0.6rem 1.1rem;
+      padding: 0.7rem 1.4rem;             /* slightly larger pill */
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      background: rgba(15, 23, 42, 0.75);
+      gap: 8px;
+      background: rgba(15, 23, 42, 0.85);
     }
 
     .dot {
