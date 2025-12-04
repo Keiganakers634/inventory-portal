@@ -118,7 +118,173 @@
         padding: 26px 24px 30px;
       }
     }
+                  /*ADMIN STYLING INFO*/
+    .admin-toggle-btn {
+      margin-top: 8px;
+      font-size: 0.78rem;
+      border-radius: 999px;
+      border: 1px dashed rgba(148, 163, 184, 0.8);
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--text-soft);
+      padding: 4px 10px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background var(--transition-fast),
+        transform var(--transition-fast), border-color var(--transition-fast),
+        color var(--transition-fast);
+    }
 
+    .admin-toggle-btn:hover {
+      background: rgba(15, 23, 42, 0.95);
+      color: var(--text);
+      transform: translateY(-1px);
+    }
+
+    .admin-section {
+      margin-top: 32px;
+      border-top: 1px dashed var(--border-subtle);
+      padding-top: 20px;
+    }
+
+    .admin-header-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .admin-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    .admin-header-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .admin-mode-toggle {
+      font-size: 0.78rem;
+      padding: 5px 11px;
+      border-radius: 999px;
+      border: 1px solid var(--border-subtle);
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--text-soft);
+      cursor: pointer;
+      transition: background var(--transition-fast),
+        color var(--transition-fast), transform var(--transition-fast);
+    }
+
+    .admin-mode-toggle:hover {
+      background: rgba(15, 23, 42, 0.95);
+      color: var(--text);
+      transform: translateY(-1px);
+    }
+
+    .admin-select {
+      border-radius: 999px;
+      border: 1px solid var(--border-subtle);
+      background: rgba(15, 23, 42, 0.96);
+      color: var(--text-soft);
+      font-size: 0.8rem;
+      padding: 5px 26px 5px 10px;
+    }
+
+    .admin-metrics-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    @media (min-width: 768px) {
+      .admin-metrics-row {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    .admin-metric-card {
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-subtle);
+      background: rgba(15, 23, 42, 0.9);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .admin-metric-label {
+      font-size: 0.76rem;
+      color: var(--text-soft);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .admin-metric-main {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .admin-metric-sub {
+      font-size: 0.8rem;
+      color: var(--text-soft);
+    }
+
+    .admin-table-wrapper {
+      margin-top: 8px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-subtle);
+      background: rgba(15, 23, 42, 0.9);
+      overflow: auto;
+      max-height: 420px;
+    }
+
+    .admin-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+      min-width: 640px;
+    }
+
+    .admin-table thead {
+      position: sticky;
+      top: 0;
+      background: #020617;
+      z-index: 1;
+    }
+
+    .admin-table th,
+    .admin-table td {
+      padding: 6px 8px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    .admin-table th {
+      font-weight: 500;
+      color: var(--text-soft);
+    }
+
+    .admin-table tbody tr:nth-child(even) {
+      background: rgba(15, 23, 42, 0.95);
+    }
+
+    .admin-login-error {
+      font-size: 0.76rem;
+      color: var(--danger);
+      min-height: 1.1em;
+      margin-top: 4px;
+    }
+
+    
     .header-row {
       display: flex;
       flex-direction: column;
@@ -1138,6 +1304,12 @@
               list will refresh with the latest status.
             </span>
           </div>
+          
+          <button type="button" class="admin-toggle-btn" id="admin-toggle-btn">
+            <span class="mono">Admin</span>
+            <span>Inventory summary</span>
+          </button>         
+          
         </div>
       </header>
 
@@ -1180,6 +1352,26 @@
           </span>
         </div>
       </section>
+
+      <!-- Admin / summary view (password protected) -->
+      <section id="admin-section" class="admin-section" style="display:none;">
+        <div class="admin-header-row">
+          <h2 class="admin-title">Internal Inventory Summary</h2>
+          <div class="admin-header-controls">
+            <button type="button" class="admin-mode-toggle" id="admin-mode-toggle">
+              Showing: Sold so far
+            </button>
+            <select id="admin-type-filter" class="admin-select">
+              <!-- options populated in JS -->
+            </select>
+          </div>
+        </div>
+        <div id="admin-metrics"></div>
+        <div class="admin-table-wrapper">
+          <table class="admin-table" id="admin-table"></table>
+        </div>
+      </section>
+      
     </main>
   </div>
 
@@ -1261,6 +1453,47 @@
       </div>
     </div>
   </div>
+
+  <!-- Admin login modal -->
+  <div class="modal-backdrop" id="admin-login-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="admin-login-title">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title" id="admin-login-title">Admin access</div>
+          <div class="modal-subtitle">
+            Enter the admin password to view sold / remaining inventory and summary metrics.
+          </div>
+        </div>
+        <button
+          type="button"
+          class="modal-close-btn"
+          id="admin-login-close-btn"
+          aria-label="Close admin login"
+        >
+          ✕
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="input-group">
+          <label class="input-label" for="admin-password-input">Admin password</label>
+          <input
+            id="admin-password-input"
+            type="password"
+            class="input-field"
+            autocomplete="off"
+          />
+          <div class="admin-login-error" id="admin-login-error"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="secondary-btn" id="admin-login-cancel-btn">Cancel</button>
+        <button type="button" class="primary-btn" id="admin-login-submit-btn">
+          <span>Continue</span>
+        </button>
+      </div>
+    </div>
+  </div>
+  
   <!-- Image preview modal -->
   <div class="modal-backdrop" id="image-modal-backdrop" aria-hidden="true">
     <div class="modal image-modal" role="dialog" aria-modal="true" aria-labelledby="image-modal-title">
@@ -1352,6 +1585,9 @@
       aspectRatio: true,
       brand: true,
     };
+    let adminUnlocked = false;
+    let adminMode = "sold";        // "sold" -> Available = "n", "available" -> Available = "y"
+    let adminTypeFilter = "";      // normalized type id ("monitor"/"aio"/"laptop" or "")
 
 
     // DOM references
@@ -1381,6 +1617,20 @@
     const imageModalBackdrop = document.getElementById("image-modal-backdrop");
     const imageModalImg = document.getElementById("image-modal-img");
     const imageModalCloseBtn = document.getElementById("image-modal-close-btn");
+    /*ADMIN DOM INFO*/
+    const adminSectionEl = document.getElementById("admin-section");
+    const adminMetricsEl = document.getElementById("admin-metrics");
+    const adminTableEl = document.getElementById("admin-table");
+    const adminModeToggleBtn = document.getElementById("admin-mode-toggle");
+    const adminTypeFilterSelect = document.getElementById("admin-type-filter");
+    const adminToggleBtn = document.getElementById("admin-toggle-btn");
+
+    const adminLoginBackdrop = document.getElementById("admin-login-backdrop");
+    const adminPasswordInput = document.getElementById("admin-password-input");
+    const adminLoginError = document.getElementById("admin-login-error");
+    const adminLoginSubmitBtn = document.getElementById("admin-login-submit-btn");
+    const adminLoginCancelBtn = document.getElementById("admin-login-cancel-btn");
+    const adminLoginCloseBtn = document.getElementById("admin-login-close-btn");
     
     // ================================================================
     // HELPER FUNCTIONS: Data access / normalization
@@ -1769,6 +2019,279 @@
       }
     
       renderItems();
+    }
+
+    // ---------- Admin helpers (stats + table) ----------
+
+    function parsePriceToNumber(priceStr) {
+      if (!priceStr) return 0;
+      const cleaned = String(priceStr).replace(/[^0-9.]/g, "");
+      const num = parseFloat(cleaned);
+      return Number.isFinite(num) ? num : 0;
+    }
+
+    // Use employee price when available, otherwise fall back to full price
+    function getEffectivePriceNumber(item) {
+      const employee = getEmployeePrice(item);
+      const full = getFullPrice(item);
+      return parsePriceToNumber(employee || full);
+    }
+
+    function computeAdminStats() {
+      const totalItems = allItems.length || 0;
+      let soldCount = 0;
+      let soldValue = 0;
+      let remainingCount = 0;
+      let remainingValue = 0;
+
+      for (const item of allItems) {
+        const value = getEffectivePriceNumber(item);
+        if (isItemAvailable(item)) {
+          remainingCount += 1;
+          remainingValue += value;
+        } else {
+          soldCount += 1;
+          soldValue += value;
+        }
+      }
+
+      const totalValue = soldValue + remainingValue;
+      const soldCountPct = totalItems ? (soldCount / totalItems) * 100 : 0;
+      const soldValuePct = totalValue ? (soldValue / totalValue) * 100 : 0;
+
+      return {
+        totalItems,
+        soldCount,
+        soldValue,
+        remainingCount,
+        remainingValue,
+        soldCountPct,
+        soldValuePct,
+      };
+    }
+
+    function formatCurrency(amount) {
+      return (
+        "$" +
+        amount.toLocaleString(undefined, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })
+      );
+    }
+
+    function formatPercent(value) {
+      return value.toFixed(1) + "%";
+    }
+
+    function renderAdminMetrics() {
+      if (!adminMetricsEl || !allItems.length) return;
+      const stats = computeAdminStats();
+      adminMetricsEl.innerHTML = `
+        <div class="admin-metrics-row">
+          <div class="admin-metric-card">
+            <div class="admin-metric-label">Sold so far</div>
+            <div class="admin-metric-main">${stats.soldCount} item${
+              stats.soldCount === 1 ? "" : "s"
+            }</div>
+            <div class="admin-metric-sub">${formatCurrency(stats.soldValue)}</div>
+          </div>
+          <div class="admin-metric-card">
+            <div class="admin-metric-label">Remaining surplus</div>
+            <div class="admin-metric-main">${stats.remainingCount} item${
+              stats.remainingCount === 1 ? "" : "s"
+            }</div>
+            <div class="admin-metric-sub">${formatCurrency(stats.remainingValue)}</div>
+          </div>
+          <div class="admin-metric-card">
+            <div class="admin-metric-label">Progress</div>
+            <div class="admin-metric-main">${formatPercent(
+              stats.soldCountPct
+            )}</div>
+            <div class="admin-metric-sub">of items sold</div>
+            <div class="admin-metric-sub">${formatPercent(
+              stats.soldValuePct
+            )} of value sold</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function getAdminScopedItems() {
+      const targetAvailable = adminMode === "sold" ? false : true; // sold -> Available "n"
+      return allItems.filter((item) => {
+        const available = isItemAvailable(item);
+        if (targetAvailable && !available) return false;
+        if (!targetAvailable && available) return false;
+
+        if (!adminTypeFilter) return true;
+        return getNormalizedTypeId(item) === adminTypeFilter;
+      });
+    }
+
+    function getNonBlankKeysForItems(items) {
+      const keySet = new Set();
+      for (const item of items) {
+        for (const [key, value] of Object.entries(item)) {
+          if (value === null || value === undefined) continue;
+          if (String(value).trim() === "") continue;
+          keySet.add(key);
+        }
+      }
+      return Array.from(keySet);
+    }
+
+    function sortAdminKeys(keys) {
+      const priority = [
+        "Available",
+        "available",
+        "EquipmentType",
+        "Equipment Type",
+        "equipmentType",
+        "ID",
+        "Id",
+        "id",
+        "Brand",
+        "brand",
+        "Model",
+        "Model/Size",
+        "ModelSize",
+        "model",
+        "Size",
+        "size",
+        "Resolution",
+        "resolution",
+        "AspectRatio",
+        "Aspect Ratio",
+        "aspectRatio",
+        "aspect_ratio",
+        "EmployeePricing",
+        "Employee Price",
+        "employeePrice",
+        "employee_price",
+        " Price ",
+        "Price",
+        "price",
+      ];
+      const priorityIndex = (key) => {
+        const idx = priority.indexOf(key);
+        return idx === -1 ? priority.length + key.toLowerCase().charCodeAt(0) : idx;
+      };
+      return keys.sort((a, b) => {
+        const pa = priorityIndex(a);
+        const pb = priorityIndex(b);
+        if (pa !== pb) return pa - pb;
+        return a.localeCompare(b);
+      });
+    }
+
+    function formatAdminHeaderLabel(key) {
+      return key.trim().replace(/_/g, " ");
+    }
+
+    function updateAdminModeToggleLabel() {
+      if (!adminModeToggleBtn) return;
+      adminModeToggleBtn.textContent =
+        adminMode === "sold"
+          ? "Showing: Sold so far (Available = n)"
+          : "Showing: Remaining surplus (Available = y)";
+    }
+
+    function renderAdminTable() {
+      if (!adminTableEl) return;
+      const items = getAdminScopedItems();
+
+      if (!items.length) {
+        adminTableEl.innerHTML = `
+          <thead>
+            <tr><th>No items for current filters</th></tr>
+          </thead>
+          <tbody></tbody>
+        `;
+        return;
+      }
+
+      const keys = sortAdminKeys(getNonBlankKeysForItems(items));
+      const theadHtml = `
+        <thead>
+          <tr>
+            ${keys.map((key) => `<th>${formatAdminHeaderLabel(key)}</th>`).join("")}
+          </tr>
+        </thead>
+      `;
+      const rowsHtml = items
+        .map((item) => {
+          return `
+            <tr>
+              ${keys
+                .map((key) => {
+                  const value = item[key];
+                  const display =
+                    value === null || value === undefined ? "" : String(value);
+                  return `<td>${display}</td>`;
+                })
+                .join("")}
+            </tr>
+          `;
+        })
+        .join("");
+
+      adminTableEl.innerHTML = theadHtml + `<tbody>${rowsHtml}</tbody>`;
+    }
+
+    function buildAdminTypeFilterOptionsOnce() {
+      if (!adminTypeFilterSelect || adminTypeFilterSelect.dataset.initialized === "true") {
+        return;
+      }
+      adminTypeFilterSelect.innerHTML = `
+        <option value="">All equipment types</option>
+        ${EQUIPMENT_TYPES.map(
+          (t) => `<option value="${t.id}">${t.label}</option>`
+        ).join("")}
+      `;
+      adminTypeFilterSelect.dataset.initialized = "true";
+    }
+
+    function renderAdminView() {
+      if (!adminSectionEl || !adminUnlocked) return;
+      renderAdminMetrics();
+      updateAdminModeToggleLabel();
+      renderAdminTable();
+    }
+
+    function openAdminLoginModal() {
+      if (!adminLoginBackdrop) return;
+      adminLoginError.textContent = "";
+      adminPasswordInput.value = "";
+      adminLoginBackdrop.classList.add("active");
+      adminLoginBackdrop.setAttribute("aria-hidden", "false");
+      setTimeout(() => adminPasswordInput.focus(), 50);
+    }
+
+    function closeAdminLoginModal() {
+      if (!adminLoginBackdrop) return;
+      adminLoginBackdrop.classList.remove("active");
+      adminLoginBackdrop.setAttribute("aria-hidden", "true");
+    }
+
+    function showAdminSection() {
+      if (!adminSectionEl) return;
+      adminSectionEl.style.display = "block";
+      buildAdminTypeFilterOptionsOnce();
+      renderAdminView();
+      adminSectionEl.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function handleAdminLoginSubmit() {
+      const entered = adminPasswordInput.value;
+      if (entered === "D@nW@lburG!") {
+        adminUnlocked = true;
+        adminLoginError.textContent = "";
+        closeAdminLoginModal();
+        showAdminSection();
+      } else {
+        adminLoginError.textContent = "Incorrect password. Please try again.";
+      }
     }
 
 
@@ -2558,10 +3081,79 @@
           closeInfoModal();
         } else if (imageModalBackdrop.classList.contains("active")) {
           closeImageModal();
+        } else if (adminLoginBackdrop.classList.contains("active")) {
+          closeAdminLoginModal();
         }
       }
     });
 
+
+    if (adminToggleBtn) {
+      adminToggleBtn.addEventListener("click", () => {
+        if (!adminUnlocked) {
+          openAdminLoginModal();
+        } else if (adminSectionEl) {
+          const isHidden =
+            adminSectionEl.style.display === "none" ||
+            adminSectionEl.style.display === "";
+          adminSectionEl.style.display = isHidden ? "block" : "none";
+          if (isHidden) {
+            renderAdminView();
+            adminSectionEl.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        }
+      });
+    }
+    if (adminLoginSubmitBtn) {
+      adminLoginSubmitBtn.addEventListener("click", () => {
+        handleAdminLoginSubmit();
+      });
+    }
+
+    if (adminLoginCancelBtn) {
+      adminLoginCancelBtn.addEventListener("click", () => {
+        closeAdminLoginModal();
+      });
+    }
+
+    if (adminLoginCloseBtn) {
+      adminLoginCloseBtn.addEventListener("click", () => {
+        closeAdminLoginModal();
+      });
+    }
+
+    if (adminLoginBackdrop) {
+      adminLoginBackdrop.addEventListener("click", (event) => {
+        if (event.target === adminLoginBackdrop) {
+          closeAdminLoginModal();
+        }
+      });
+    }
+
+    if (adminPasswordInput) {
+      adminPasswordInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          handleAdminLoginSubmit();
+        }
+      });
+    }
+
+    if (adminModeToggleBtn) {
+      adminModeToggleBtn.addEventListener("click", () => {
+        adminMode = adminMode === "sold" ? "available" : "sold";
+        updateAdminModeToggleLabel();
+        renderAdminTable();
+      });
+    }
+
+    if (adminTypeFilterSelect) {
+      adminTypeFilterSelect.addEventListener("change", () => {
+        adminTypeFilter = adminTypeFilterSelect.value;
+        renderAdminTable();
+      });
+    }
+    
     // ================================================================
     // INITIALIZATION
     // ================================================================
