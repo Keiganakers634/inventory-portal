@@ -204,21 +204,22 @@
       position: relative;
       border-radius: 999px;
       border: 1px solid var(--border-subtle);
-      padding: 6px 14px;
-      font-size: 0.82rem;
+      padding: 10px 18px;              /* bigger hit area */
+      font-size: 0.9rem;               /* larger label text */
       color: var(--text-soft);
       background: rgba(15, 23, 42, 0.9);
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;                        /* a bit more spacing */
+      min-height: 38px;                /* ensures tall enough button */
       transition: border-color var(--transition-fast),
         color var(--transition-fast), background var(--transition-fast),
         transform var(--transition-fast), box-shadow var(--transition-fast);
     }
-
+    
     .type-chip span.icon {
-      font-size: 0.9rem;
+      font-size: 1.05rem;              /* slightly bigger icon */
     }
 
     .type-chip:hover {
@@ -247,6 +248,114 @@
       color: var(--text-soft);
     }
 
+    .filters-section {
+      margin-bottom: 16px;
+      padding: 10px 12px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-subtle);
+      background: rgba(15, 23, 42, 0.9);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    
+    .filters-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .filters-title {
+      font-size: 0.8rem;
+      color: var(--text-soft);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    
+    .filters-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 14px;
+    }
+    
+    .filter-group {
+      min-width: 0;
+    }
+    
+    .filter-label {
+      font-size: 0.76rem;
+      color: var(--text-soft);
+      margin-bottom: 4px;
+    }
+    
+    .filter-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    
+    /* Filter chips visually consistent with type chips, a bit smaller */
+    .filter-chip {
+      border-radius: 999px;
+      border: 1px solid var(--border-subtle);
+      padding: 5px 10px;
+      font-size: 0.78rem;
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--text-soft);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: border-color var(--transition-fast),
+        color var(--transition-fast), background var(--transition-fast),
+        transform var(--transition-fast), box-shadow var(--transition-fast);
+    }
+    
+    .filter-chip:hover {
+      border-color: rgba(148, 163, 184, 1);
+      color: var(--text);
+      box-shadow: var(--shadow-subtle);
+      transform: translateY(-1px);
+    }
+    
+    .filter-chip.active {
+      color: var(--accent-strong);
+      border-color: var(--accent-strong);
+      background: radial-gradient(
+        circle at top left,
+        rgba(56, 189, 248, 0.18),
+        rgba(15, 23, 42, 0.95)
+      );
+    }
+    
+    .filters-reset-btn {
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.8);
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--text-soft);
+      font-size: 0.78rem;
+      padding: 4px 11px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background var(--transition-fast),
+        transform var(--transition-fast), border-color var(--transition-fast),
+        color var(--transition-fast), opacity var(--transition-fast);
+    }
+    
+    .filters-reset-btn:hover {
+      background: rgba(15, 23, 42, 0.95);
+      color: var(--text);
+      transform: translateY(-1px);
+    }
+    
+    .filters-reset-btn:active {
+      transform: translateY(0);
+    }
+
+    
     /* Item grid & cards */
     .items-section-header {
       display: flex;
@@ -939,6 +1048,23 @@
         <!-- Populated via JS using EQUIPMENT_TYPES -->
       </section>
 
+      <!-- Filters (shown after a category is selected) -->
+      <section id="filters-section" class="filters-section" style="display:none;">
+        <div class="filters-header">
+          <div class="filters-title">Filters</div>
+          <button
+            type="button"
+            class="filters-reset-btn"
+            id="filters-reset-btn"
+          >
+            <span>Reset filters</span>
+          </button>
+        </div>
+        <div class="filters-grid" id="filters-grid">
+          <!-- Populated via JS -->
+        </div>
+      </section>
+      
       <!-- Item list / grid -->
       <section id="items-section" aria-live="polite">
         <div class="items-section-header">
@@ -1114,6 +1240,12 @@
     let selectedTypeId = null;
     let currentItemForClaim = null;
     let isSubmitting = false;
+    const activeFilters = {
+      size: new Set(),
+      resolution: new Set(),
+      aspectRatio: new Set(),
+      brand: new Set(),
+    };
 
     // DOM references
     const typeSelectorEl = document.getElementById("type-selector");
@@ -1121,6 +1253,9 @@
     const itemsSectionTitleEl = document.getElementById("items-section-title");
     const itemsCountEl = document.getElementById("items-count");
     const emptyStateEl = document.getElementById("empty-state");
+    const filtersSectionEl = document.getElementById("filters-section");
+    const filtersGridEl = document.getElementById("filters-grid");
+    const filtersResetBtn = document.getElementById("filters-reset-btn");
 
     const claimModalBackdrop = document.getElementById("claim-modal-backdrop");
     const claimItemNameEl = document.getElementById("claim-item-name");
@@ -1316,6 +1451,173 @@
       return result;
     }
 
+    function buildFilterOptions(items) {
+      const options = {
+        size: new Set(),
+        resolution: new Set(),
+        aspectRatio: new Set(),
+        brand: new Set(),
+      };
+    
+      for (const item of items) {
+        const size = getField(item, "Size", "size");
+        if (size) options.size.add(String(size));
+    
+        const resolution = getField(item, "Resolution", "resolution");
+        if (resolution) options.resolution.add(String(resolution));
+    
+        const aspectRaw = getField(
+          item,
+          "AspectRatio",
+          "Aspect Ratio",
+          "aspectRatio",
+          "aspect_ratio"
+        );
+        const aspect = normalizeAspectRatio(aspectRaw);
+        if (aspect) options.aspectRatio.add(String(aspect));
+    
+        const brand = getField(item, "Brand", "brand");
+        if (brand) options.brand.add(String(brand));
+      }
+    
+      return {
+        size: Array.from(options.size).sort(),
+        resolution: Array.from(options.resolution).sort(),
+        aspectRatio: Array.from(options.aspectRatio).sort(),
+        brand: Array.from(options.brand).sort(),
+      };
+    }
+    
+    function hasActiveFilters() {
+      return (
+        activeFilters.size.size ||
+        activeFilters.resolution.size ||
+        activeFilters.aspectRatio.size ||
+        activeFilters.brand.size
+      );
+    }
+    
+    function applyFilters(items) {
+      if (!hasActiveFilters()) return items;
+    
+      return items.filter((item) => {
+        const sizeVal = String(getField(item, "Size", "size") || "");
+        const resVal = String(getField(item, "Resolution", "resolution") || "");
+        const aspectRaw = getField(
+          item,
+          "AspectRatio",
+          "Aspect Ratio",
+          "aspectRatio",
+          "aspect_ratio"
+        );
+        const aspectVal = String(normalizeAspectRatio(aspectRaw) || "");
+        const brandVal = String(getField(item, "Brand", "brand") || "");
+    
+        if (activeFilters.size.size && !activeFilters.size.has(sizeVal)) return false;
+        if (
+          activeFilters.resolution.size &&
+          !activeFilters.resolution.has(resVal)
+        )
+          return false;
+        if (
+          activeFilters.aspectRatio.size &&
+          !activeFilters.aspectRatio.has(aspectVal)
+        )
+          return false;
+        if (activeFilters.brand.size && !activeFilters.brand.has(brandVal))
+          return false;
+    
+        return true;
+      });
+    }
+    
+    function resetFilters(shouldRerender = true) {
+      activeFilters.size.clear();
+      activeFilters.resolution.clear();
+      activeFilters.aspectRatio.clear();
+      activeFilters.brand.clear();
+    
+      if (filtersResetBtn) {
+        filtersResetBtn.style.visibility = "hidden";
+      }
+    
+      if (shouldRerender) {
+        renderItems();
+      }
+    }
+    
+    function renderFilters(itemsForType) {
+      if (!filtersSectionEl || !filtersGridEl) return;
+    
+      const { size, resolution, aspectRatio, brand } = buildFilterOptions(itemsForType);
+      const hasAny =
+        size.length || resolution.length || aspectRatio.length || brand.length;
+    
+      if (!hasAny || !selectedTypeId) {
+        filtersSectionEl.style.display = "none";
+        filtersGridEl.innerHTML = "";
+        resetFilters(false);
+        return;
+      }
+    
+      filtersSectionEl.style.display = "flex";
+    
+      const groupsConfig = [
+        { key: "size", label: "Size", values: size },
+        { key: "resolution", label: "Resolution", values: resolution },
+        { key: "aspectRatio", label: "Aspect ratio", values: aspectRatio },
+        { key: "brand", label: "Brand", values: brand },
+      ];
+    
+      let html = "";
+      groupsConfig.forEach(({ key, label, values }) => {
+        if (!values.length) return;
+    
+        html += `
+          <div class="filter-group" data-filter-group="${key}">
+            <div class="filter-label">${label}</div>
+            <div class="filter-chips">
+              ${values
+                .map((value) => {
+                  const stringVal = String(value);
+                  const isActive = activeFilters[key].has(stringVal);
+                  return `
+                    <button type="button"
+                            class="filter-chip${isActive ? " active" : ""}"
+                            data-filter-key="${key}"
+                            data-filter-value="${stringVal.replace(/"/g, "&quot;")}">
+                      <span>${stringVal}</span>
+                    </button>
+                  `;
+                })
+                .join("")}
+            </div>
+          </div>
+        `;
+      });
+    
+      filtersGridEl.innerHTML = html;
+    
+      if (filtersResetBtn) {
+        filtersResetBtn.style.visibility = hasActiveFilters() ? "visible" : "hidden";
+      }
+    }
+    
+    function toggleFilter(key, value) {
+      const set = activeFilters[key];
+      if (!set) return;
+    
+      const stringVal = String(value);
+      if (set.has(stringVal)) {
+        set.delete(stringVal);
+      } else {
+        set.add(stringVal);
+      }
+    
+      renderItems();
+    }
+
+
     // ================================================================
     // IMAGE HANDLING
     // ================================================================
@@ -1442,12 +1744,22 @@
       if (!selectedTypeId) {
         itemsSectionTitleEl.textContent = "Select a category to view inventory.";
         itemsCountEl.textContent = "";
+        if (filtersSectionEl) {
+          filtersSectionEl.style.display = "none";
+        }
         return;
       }
 
-      filteredItems = allItems.filter(
+
+      const itemsForType = allItems.filter(
         (item) => getNormalizedTypeId(item) === selectedTypeId
       );
+
+      // Build and show filter chips for this type
+      renderFilters(itemsForType);
+
+      // Apply active filters
+      filteredItems = applyFilters(itemsForType);
 
       const typeConfig = EQUIPMENT_TYPES.find((t) => t.id === selectedTypeId);
       const typeLabel = typeConfig ? typeConfig.label : "Selected category";
@@ -1456,6 +1768,7 @@
       itemsCountEl.textContent = `${filteredItems.length} item${
         filteredItems.length === 1 ? "" : "s"
       }`;
+
 
       if (!filteredItems.length) {
         emptyStateEl.style.display = "block";
@@ -2000,6 +2313,28 @@
       card.classList.toggle("expanded");
     });
 
+    // Filter chips (multi-select)
+    if (filtersSectionEl) {
+      filtersSectionEl.addEventListener("click", (event) => {
+        const chip = event.target.closest(".filter-chip");
+        if (!chip) return;
+
+        const key = chip.dataset.filterKey;
+        const value = chip.dataset.filterValue;
+        if (!key || value === undefined) return;
+
+        toggleFilter(key, value);
+      });
+    }
+
+    // Reset all filters
+    if (filtersResetBtn) {
+      filtersResetBtn.addEventListener("click", () => {
+        resetFilters();
+      });
+    }
+
+    
     // Claim modal buttons
     claimCancelBtn.addEventListener("click", () => {
       closeClaimModal();
