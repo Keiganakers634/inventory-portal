@@ -142,6 +142,21 @@
       transform: translateY(-1px);
     }
 
+    .admin-toggle-btn.active {
+      padding: 7px 16px;         /* a bit larger */
+      font-size: 0.88rem;        /* slightly bigger text */
+      border-style: solid;
+      border-color: var(--accent-strong);
+      color: var(--accent-strong);
+      background: radial-gradient(
+        circle at top left,
+        rgba(56, 189, 248, 0.18),
+        rgba(15, 23, 42, 0.96)
+      );
+      box-shadow: var(--shadow-subtle);
+    }
+
+    
     .admin-section {
       margin-top: 32px;
       border-top: 1px dashed var(--border-subtle);
@@ -1313,6 +1328,25 @@
         </div>
       </header>
 
+      <!-- Admin / summary view (password protected) -->
+      <section id="admin-section" class="admin-section" style="display:none;">
+        <div class="admin-header-row">
+          <h2 class="admin-title">Internal Inventory Summary</h2>
+          <div class="admin-header-controls">
+            <button type="button" class="admin-mode-toggle" id="admin-mode-toggle">
+              Showing: Sold so far
+            </button>
+            <select id="admin-type-filter" class="admin-select">
+              <!-- options populated in JS -->
+            </select>
+          </div>
+        </div>
+        <div id="admin-metrics"></div>
+        <div class="admin-table-wrapper">
+          <table class="admin-table" id="admin-table"></table>
+        </div>
+      </section>
+  
       <!-- Equipment type selector -->
       <section aria-label="Equipment type" class="type-selector" id="type-selector">
         <!-- Populated via JS using EQUIPMENT_TYPES -->
@@ -1350,25 +1384,6 @@
             If you believe this is incorrect, please refresh your browser or
             contact IT.
           </span>
-        </div>
-      </section>
-
-      <!-- Admin / summary view (password protected) -->
-      <section id="admin-section" class="admin-section" style="display:none;">
-        <div class="admin-header-row">
-          <h2 class="admin-title">Internal Inventory Summary</h2>
-          <div class="admin-header-controls">
-            <button type="button" class="admin-mode-toggle" id="admin-mode-toggle">
-              Showing: Sold so far
-            </button>
-            <select id="admin-type-filter" class="admin-select">
-              <!-- options populated in JS -->
-            </select>
-          </div>
-        </div>
-        <div id="admin-metrics"></div>
-        <div class="admin-table-wrapper">
-          <table class="admin-table" id="admin-table"></table>
         </div>
       </section>
       
@@ -2269,8 +2284,31 @@
       adminSectionEl.style.display = "block";
       buildAdminTypeFilterOptionsOnce();
       renderAdminView();
+
+      if (adminToggleBtn) {
+        adminToggleBtn.classList.add("active");
+        adminToggleBtn.innerHTML = `
+          <span class="mono">Admin</span>
+          <span>Close summary</span>
+        `;
+      }
+
       adminSectionEl.scrollIntoView({ behavior: "smooth", block: "start" });
     }
+
+    function hideAdminSection() {
+      if (!adminSectionEl) return;
+      adminSectionEl.style.display = "none";
+
+      if (adminToggleBtn) {
+        adminToggleBtn.classList.remove("active");
+        adminToggleBtn.innerHTML = `
+          <span class="mono">Admin</span>
+          <span>Inventory summary</span>
+        `;
+      }
+    }
+
 
     function handleAdminLoginSubmit() {
       const entered = adminPasswordInput.value;
@@ -3086,14 +3124,15 @@
           const isHidden =
             adminSectionEl.style.display === "none" ||
             adminSectionEl.style.display === "";
-          adminSectionEl.style.display = isHidden ? "block" : "none";
           if (isHidden) {
-            renderAdminView();
-            adminSectionEl.scrollIntoView({ behavior: "smooth", block: "start" });
+            showAdminSection();
+          } else {
+            hideAdminSection();
           }
         }
       });
     }
+
     if (adminLoginSubmitBtn) {
       adminLoginSubmitBtn.addEventListener("click", () => {
         handleAdminLoginSubmit();
