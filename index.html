@@ -1198,10 +1198,15 @@
      */
     function getItemTitle(item) {
       const brand = getField(item, "Brand", "brand");
+      const name = getField(item, "Name", "name");
       const model = getField(item, "Model", "model", "Model/Size", "ModelSize");
       const size = getField(item, "Size", "size");
-      return [brand, model, size].filter(Boolean).join(" ");
+    
+      // Prefer Name when present, fall back to Model
+      const primary = name || model;
+      return [brand, primary, size].filter(Boolean).join(" ");
     }
+
 
     /**
      * Get the employee-facing price from EmployeePricing (or fallbacks).
@@ -1270,6 +1275,7 @@
      */
     function getItemDetails(item) {
       return {
+        Model: getField(item, "Model", "model", "Model/Size", "ModelSize"),
         SerialNumber: getField(
           item,
           "SerialNumber",
@@ -1282,6 +1288,19 @@
         RAM: getField(item, "RAM", "ram", "Memory", "memory"),
         Storage: getField(item, "Storage", "storage", "Drive", "drive"),
       };
+    }
+
+    function normalizeAspectRatio(raw) {
+      if (!raw) return "";
+      const str = String(raw).trim();
+      const match = str.match(/^(\d+)\s*:\s*(\d+)$/);
+      if (!match) return str;
+    
+      const first = match[1];
+      let second = match[2].replace(/^0+/, ""); // remove leading zeros
+      if (second === "") second = "0";
+    
+      return `${first}:${second}`;
     }
 
     /**
@@ -1448,9 +1467,23 @@
         const available = isItemAvailable(item);
         const typeRaw = getEquipmentTypeRaw(item);
         const brand = getField(item, "Brand", "brand");
+        const name = getField(item, "Name", "name");
         const model = getField(item, "Model", "model");
         const size = getField(item, "Size", "size");
-        const title = [brand, model, size].filter(Boolean).join(" ");
+        const resolution = getField(item, "Resolution", "resolution");
+        const aspectRatioRaw = getField(
+          item,
+          "AspectRatio",
+          "Aspect Ratio",
+          "aspectRatio",
+          "aspect_ratio"
+        );
+        const aspectRatio = normalizeAspectRatio(aspectRatioRaw);
+        
+        // Use the same logic as getItemTitle: prefer Name when present
+        const titlePrimary = name || model;
+        const title = [brand, titlePrimary, size].filter(Boolean).join(" ");
+        
         const employeePrice = getEmployeePrice(item);
         const fullPrice = getFullPrice(item);
 
@@ -1469,7 +1502,7 @@
               <div>
                 <div class="item-brand">${brand || typeRaw || "Equipment"}</div>
                 <div class="item-model">
-                  ${model || "(Unnamed item)"}${size ? ` — ${size}` : ""}
+                  ${(name || model || "(Unnamed item)")}${size ? ` — ${size}` : ""}
                 </div>
               </div>
               <div class="item-meta-row">
@@ -1480,6 +1513,8 @@
                       : `<span class="item-tag">Not available</span>`
                   }
                   ${size ? `<span class="item-tag">Size: ${size}</span>` : ""}
+                  ${resolution ? `<span class="item-tag">Resolution: ${resolution}</span>` : ""}
+                  ${aspectRatio ? `<span class="item-tag">Aspect ratio: ${aspectRatio}</span>` : ""}
                   ${typeRaw ? `<span class="item-tag">${typeRaw}</span>` : ""}
                 </div>
                 ${
