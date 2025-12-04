@@ -1724,6 +1724,10 @@
     const adminLoginSubmitBtn = document.getElementById("admin-login-submit-btn");
     const adminLoginCancelBtn = document.getElementById("admin-login-cancel-btn");
     const adminLoginCloseBtn = document.getElementById("admin-login-close-btn");
+    // somewhere near the top of the file
+    const ADMIN_PASSWORD = String.fromCharCode(
+      82, 48, 98, 51, 114, 116, 36, 108, 64, 99, 107, 49, 50, 51, 33
+    );    
     
     // ================================================================
     // HELPER FUNCTIONS: Data access / normalization
@@ -2407,7 +2411,7 @@
 
     function handleAdminLoginSubmit() {
       const entered = adminPasswordInput.value;
-      if (entered === "D@nW@lburG!") {
+      if (entered === ADMIN_PASSWORD) {
         adminUnlocked = true;
         adminLoginError.textContent = "";
         closeAdminLoginModal();
@@ -2416,6 +2420,7 @@
         adminLoginError.textContent = "Incorrect password. Please try again.";
       }
     }
+
 
 
     // ================================================================
