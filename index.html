@@ -2155,10 +2155,24 @@
       });
     }
 
+      // Columns we want to exclude from the visible admin table,
+      // but still keep in the data for metrics.
+    const ADMIN_HIDDEN_COLUMNS = new Set([
+      "Available",
+      "ID",
+      "Model",
+      "SerialNumber",
+      "AspectRatio",
+      "Condition",
+    ]);
+
     function getNonBlankKeysForItems(items) {
       const keySet = new Set();
       for (const item of items) {
         for (const [key, value] of Object.entries(item)) {
+          // Skip keys we don't want to show in the visible admin table
+          if (ADMIN_HIDDEN_COLUMNS.has(key)) continue;
+    
           if (value === null || value === undefined) continue;
           if (String(value).trim() === "") continue;
           keySet.add(key);
@@ -2166,6 +2180,7 @@
       }
       return Array.from(keySet);
     }
+
 
     function sortAdminKeys(keys) {
       const priority = [
@@ -2188,6 +2203,7 @@
         "claimerEmail",
         "claimTimestamp",
       ];
+
 
       const priorityIndex = (key) => {
         const idx = priority.indexOf(key);
