@@ -118,6 +118,66 @@
         padding: 26px 24px 30px;
       }
     }
+
+    /* Base: hidden by default; show it while loading via JS or existing logic */
+    #items-section-title {
+      display: none; /* or block/flex if you already show it another way */
+    }
+    
+    /* When you want it visible, add .is-visible in JS */
+    #items-section-title.is-visible {
+      display: flex;
+    }
+    
+    /* Layout + typography */
+    .loading-indicator {
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    
+      margin: 2rem 0;
+      font-size: 1.8rem;         /* larger text */
+      font-weight: 600;
+      line-height: 1.3;
+      gap: 0.75rem;
+    
+      /* Fade in/out loop */
+      animation: loadingFade 2.4s ease-in-out infinite;
+    }
+    
+    /* Text styling (optional, tweak as needed) */
+    .loading-text {
+      letter-spacing: 0.04em;
+    }
+    
+    /* Spinner circle */
+    .loading-spinner {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+    
+      /* light ring with stronger top segment */
+      border: 4px solid rgba(0, 0, 0, 0.1);
+      border-top-color: currentColor;
+    
+      animation: spinnerRotate 0.8s linear infinite;
+    }
+    
+    /* Fade in/out animation */
+    @keyframes loadingFade {
+      0%   { opacity: 0; }
+      25%  { opacity: 1; }
+      75%  { opacity: 1; }
+      100% { opacity: 0; }
+    }
+    
+    /* Spinner rotation */
+    @keyframes spinnerRotate {
+      0%   { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
                   /*ADMIN STYLING INFO*/
     .admin-toggle-btn {
       margin-top: 8px;
@@ -1372,8 +1432,9 @@
       <!-- Item list / grid -->
       <section id="items-section" aria-live="polite">
         <div class="items-section-header">
-          <div class="items-section-title" id="items-section-title">
-            Select a category to view inventory.
+          <div class="items-section-title loading-indicator" id="items-section-title">
+            <span class="loading-text">Loading Available Inventory...</span>
+            <div class="loading-spinner" aria-hidden="true"></div>
           </div>
           <div class="items-count" id="items-count"></div>
         </div>
@@ -2748,6 +2809,25 @@
     // DATA LOADING
     // ================================================================
 
+    // Loading indicator element (title + spinner)
+    const loadingTitleEl = document.getElementById("items-section-title");
+    
+    function showInventoryLoading(message = "Loading Available Inventory...") {
+      if (!loadingTitleEl) return;
+    
+      // If you used the <span class="loading-text"> pattern:
+      const textEl =
+        loadingTitleEl.querySelector(".loading-text") || loadingTitleEl;
+    
+      textEl.textContent = message;
+      loadingTitleEl.classList.add("is-visible");
+    }
+    
+    function hideInventoryLoading() {
+      if (!loadingTitleEl) return;
+      loadingTitleEl.classList.remove("is-visible");
+    }
+    
     /**
      * Fetch inventory.json from server.
      */
@@ -2796,8 +2876,19 @@
      *  - render items (checking Available field to gray out "n")
      */
     async function loadInitialInventory() {
+      showInventoryLoading("Loading Available Inventory...");
+    
       try {
         allItems = await fetchInventory();
+    
+        // Default selected type is first configured type
+        if (!selectedTypeId && EQUIPMENT_TYPES.length > 0) {
+          selectedTypeId = EQUIPMENT_TYPES[0].id;
+        }
+    
+        renderTypeSelector();
+        updateTypeCounts();
+        renderItems();
       } catch (error) {
         console.error("Error loading inventory:", error);
         openInfoModal({
@@ -2805,17 +2896,10 @@
           contentHtml:
             "<p>We couldn't load the inventory file. Please try refreshing this page or contact IT if the issue continues.</p>",
         });
-        return;
+      } finally {
+        // always hide loader whether success or error
+        hideInventoryLoading();
       }
-
-      // Default selected type is first configured type
-      if (!selectedTypeId && EQUIPMENT_TYPES.length > 0) {
-        selectedTypeId = EQUIPMENT_TYPES[0].id;
-      }
-
-      renderTypeSelector();
-      updateTypeCounts();
-      renderItems();
     }
 
     /**
