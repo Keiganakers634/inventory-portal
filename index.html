@@ -141,7 +141,7 @@
     }
 
     .app-title {
-      font-size: 1.45rem;
+      font-size: 7.75rem;
       letter-spacing: 0.02em;
       font-weight: 650;
       display: inline-flex;
@@ -149,6 +149,12 @@
       gap: 8px;
     }
 
+    @media (min-width: 768px) {
+      .app-title {
+        font-size: 3.25rem;
+      }
+    }
+    
     .app-title-badge {
       font-size: 0.7rem;
       padding: 2px 7px;
@@ -164,20 +170,25 @@
       letter-spacing: 0.08em;
     }
 
+    .lead-subtitle {
+      font-size: 1.15rem;
+      font-weight: 500;
+    }
+    
     .app-subtitle {
-      font-size: 0.9rem;
+      font-size: 1.05rem;
       color: var(--text-soft);
       max-width: 36rem;
     }
 
     .pill-notice {
       align-self: flex-start;
-      margin-top: 8px;
-      font-size: 0.76rem;
+      margin-top: 1.5rem;
+      font-size: 0.98rem;
       color: var(--text-soft);
       border-radius: 999px;
       border: 1px dashed rgba(148, 163, 184, 0.7);
-      padding: 4px 10px;
+      padding: 0.6rem 1.1rem;
       display: inline-flex;
       align-items: center;
       gap: 6px;
@@ -1084,17 +1095,35 @@
       <header class="header-row">
         <div class="title-block">
           <h1 class="app-title">
-            RS Internal Inventory
-            <span class="app-title-badge">Employee-Only</span>
+            RS Inventory Marketplace
+            <span class="app-title-badge">Employee Edition</span>
           </h1>
-          <p class="app-subtitle">
-            Browse available monitors, laptops and other surplus equipment! Employees are offered the discounted price displayed in this portal, before we take them to general resale. NOTE: When you claim an
-            item, it becomes unavailable for other employees. For this reason, please only claim an item if you fully intend to purchase. Once your item is claimed, you will receive a confirmation email from Robert Slack
-            IT regarding payment and retrieval of your purchase!
+      
+          <p class="app-subtitle lead-subtitle">
+            This is the internal RS marketplace for employees to purchase surplus
+            monitors, laptops, and other equipment at special discounted pricing.
           </p>
+      
+          <p class="app-subtitle">
+            You’re seeing the same live inventory our IT team uses before items are
+            listed for general resale. Click an item to view details and, if you’re
+            ready, submit a claim.
+          </p>
+      
+          <p class="app-subtitle">
+            When you claim an item, it becomes unavailable to other employees.
+            Please only claim an item if you fully intend to purchase. After you
+            submit your claim, you’ll receive a confirmation email from Robert Slack
+            IT with payment and pickup instructions.
+          </p>
+      
           <div class="pill-notice">
             <span class="dot"></span>
-            <span>Live availability is updated when you attempt to submit your claim an item. In the case that someone has claimed an item during your visit .</span>
+            <span>
+              Availability is re-checked when you submit your claim. If someone
+              claimed the same item moments before you, you’ll be notified and the
+              list will refresh with the latest status.
+            </span>
           </div>
         </div>
       </header>
