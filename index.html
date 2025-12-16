@@ -119,23 +119,23 @@
       }
     }
 
-    /* Base: hidden by default; show it while loading via JS or existing logic */
+    /* Base: visible; show loading styling via .is-visible */
     #items-section-title {
-      display: none; /* or block/flex if you already show it another way */
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
     
-    /* When you want it visible, add .is-visible in JS */
+    /* When you want loading visible, add .is-visible in JS */
     #items-section-title.is-visible {
-      display: flex;
-    
       /* NEW: make sure the whole block centers its contents */
       justify-content: center;
       align-items: center;
       width: 100%;
     }
     
-    /* Layout + typography */
-    .loading-indicator {
+    /* Loading layout + typography (only when loading) */
+    .loading-indicator.is-visible {
       flex-direction: column;
       align-items: center;
       justify-content: center;
@@ -155,6 +155,15 @@
     /* Text styling (optional, tweak as needed) */
     .loading-text {
       letter-spacing: 0.04em;
+    }
+
+    /* Spinner hidden unless loading */
+    .loading-indicator .loading-spinner {
+      display: none;
+    }
+
+    .loading-indicator.is-visible .loading-spinner {
+      display: block;
     }
     
     /* Spinner circle */
@@ -2573,7 +2582,13 @@
       emptyStateEl.style.display = "none";
 
       if (!selectedTypeId) {
-        itemsSectionTitleEl.textContent = "Select a category to view inventory.";
+        const titleTextEl =
+          (itemsSectionTitleEl && itemsSectionTitleEl.querySelector(".loading-text")) || null;
+        if (titleTextEl) {
+          titleTextEl.textContent = "Select a category to view inventory.";
+        } else {
+          itemsSectionTitleEl.textContent = "Select a category to view inventory.";
+        }
         itemsCountEl.textContent = "";
         if (filtersSectionEl) {
           filtersSectionEl.style.display = "none";
@@ -2595,7 +2610,14 @@
       const typeConfig = EQUIPMENT_TYPES.find((t) => t.id === selectedTypeId);
       const typeLabel = typeConfig ? typeConfig.label : "Selected category";
 
-      itemsSectionTitleEl.textContent = `${typeLabel} inventory`;
+      const titleTextEl =
+        (itemsSectionTitleEl && itemsSectionTitleEl.querySelector(".loading-text")) || null;
+      if (titleTextEl) {
+        titleTextEl.textContent = `${typeLabel} inventory`;
+      } else {
+        itemsSectionTitleEl.textContent = `${typeLabel} inventory`;
+      }
+
       itemsCountEl.textContent = `${filteredItems.length} item${
         filteredItems.length === 1 ? "" : "s"
       }`;
