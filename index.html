@@ -119,23 +119,23 @@
       }
     }
 
-    /* Base: visible; show loading styling via .is-visible */
+    /* Base: hidden by default; show it while loading via JS or existing logic */
     #items-section-title {
-      display: flex;
-      align-items: center;
-      gap: 10px;
+      display: none; /* or block/flex if you already show it another way */
     }
     
-    /* When you want loading visible, add .is-visible in JS */
+    /* When you want it visible, add .is-visible in JS */
     #items-section-title.is-visible {
+      display: flex;
+    
       /* NEW: make sure the whole block centers its contents */
       justify-content: center;
       align-items: center;
       width: 100%;
     }
     
-    /* Loading layout + typography (only when loading) */
-    .loading-indicator.is-visible {
+    /* Layout + typography */
+    .loading-indicator {
       flex-direction: column;
       align-items: center;
       justify-content: center;
@@ -155,15 +155,6 @@
     /* Text styling (optional, tweak as needed) */
     .loading-text {
       letter-spacing: 0.04em;
-    }
-
-    /* Spinner hidden unless loading */
-    .loading-indicator .loading-spinner {
-      display: none;
-    }
-
-    .loading-indicator.is-visible .loading-spinner {
-      display: block;
     }
     
     /* Spinner circle */
@@ -1717,6 +1708,8 @@
     let adminMode = "sold";        // "sold" -> Available = "n", "available" -> Available = "y"
     let adminTypeFilter = "";      // normalized type id ("monitor"/"aio"/"laptop" or "")
 
+    // NEW: Info modal behavior flags
+    let infoModalReloadOnOk = false;
 
     // DOM references
     const typeSelectorEl = document.getElementById("type-selector");
@@ -1875,6 +1868,96 @@
       if (!trimmed) return "";
 
       return trimmed.startsWith("$") ? trimmed : `$${trimmed}`;
+    }
+
+    // NEW: Get payment link from item (optional column)
+    function getPaymentLink(item) {
+      const raw = getField(
+        item,
+        "PaymentLink",
+        "Payment Link",
+        "PaymentURL",
+        "Payment Url",
+        "Payment URL",
+        "CheckoutLink",
+        "Checkout Link",
+        "CheckoutURL",
+        "Checkout URL",
+        "checkoutUrl",
+        "paymentUrl",
+        "paymentLink",
+        "checkout_link",
+        "payment_link"
+      );
+      if (!raw) return "";
+      const trimmed = String(raw).trim();
+      if (!trimmed) return "";
+      return trimmed;
+    }
+
+    // NEW: Basic HTML escaping helpers
+    function escapeHtml(str) {
+      return String(str || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function escapeAttr(str) {
+      return escapeHtml(str).replace(/`/g, "&#96;");
+    }
+
+    // NEW: Attempt to extract a payment URL from webhook response
+    function extractPaymentUrl(payload) {
+      if (!payload) return "";
+
+      // If response is a raw string URL
+      if (typeof payload === "string") {
+        const s = payload.trim();
+        if (/^https?:\/\//i.test(s)) return s;
+        return "";
+      }
+
+      // If it's an object, check common keys and some common nesting
+      if (typeof payload === "object") {
+        const candidates = [
+          "paymentUrl",
+          "paymentURL",
+          "paymentLink",
+          "payment_link",
+          "checkoutUrl",
+          "checkoutURL",
+          "checkoutLink",
+          "checkout_link",
+          "url",
+          "link",
+        ];
+
+        for (const key of candidates) {
+          const val = payload[key];
+          if (val && typeof val === "string" && /^https?:\/\//i.test(val.trim())) {
+            return val.trim();
+          }
+        }
+
+        // Common nesting patterns
+        if (payload.data) {
+          const nested = extractPaymentUrl(payload.data);
+          if (nested) return nested;
+        }
+        if (payload.record) {
+          const nested = extractPaymentUrl(payload.record);
+          if (nested) return nested;
+        }
+        if (payload.result) {
+          const nested = extractPaymentUrl(payload.result);
+          if (nested) return nested;
+        }
+      }
+
+      return "";
     }
 
     /**
@@ -2582,13 +2665,7 @@
       emptyStateEl.style.display = "none";
 
       if (!selectedTypeId) {
-        const titleTextEl =
-          (itemsSectionTitleEl && itemsSectionTitleEl.querySelector(".loading-text")) || null;
-        if (titleTextEl) {
-          titleTextEl.textContent = "Select a category to view inventory.";
-        } else {
-          itemsSectionTitleEl.textContent = "Select a category to view inventory.";
-        }
+        itemsSectionTitleEl.textContent = "Select a category to view inventory.";
         itemsCountEl.textContent = "";
         if (filtersSectionEl) {
           filtersSectionEl.style.display = "none";
@@ -2610,14 +2687,7 @@
       const typeConfig = EQUIPMENT_TYPES.find((t) => t.id === selectedTypeId);
       const typeLabel = typeConfig ? typeConfig.label : "Selected category";
 
-      const titleTextEl =
-        (itemsSectionTitleEl && itemsSectionTitleEl.querySelector(".loading-text")) || null;
-      if (titleTextEl) {
-        titleTextEl.textContent = `${typeLabel} inventory`;
-      } else {
-        itemsSectionTitleEl.textContent = `${typeLabel} inventory`;
-      }
-
+      itemsSectionTitleEl.textContent = `${typeLabel} inventory`;
       itemsCountEl.textContent = `${filteredItems.length} item${
         filteredItems.length === 1 ? "" : "s"
       }`;
@@ -2817,6 +2887,8 @@
      *   - autoReload: boolean
      *   - reloadDelayMs: number
      *   - hideOkButton: boolean
+     *   - okLabel: string
+     *   - reloadOnOk: boolean
      */
     function openInfoModal(options = {}) {
       const {
@@ -2825,11 +2897,18 @@
         autoReload = false,
         reloadDelayMs = 5000,
         hideOkButton = false,
+        okLabel = "OK",
+        reloadOnOk = false,
       } = options;
+
+      infoModalReloadOnOk = !!reloadOnOk;
 
       infoModalTitle.textContent = title;
       infoModalContent.innerHTML = contentHtml;
       infoModalOkBtn.style.display = hideOkButton ? "none" : "inline-flex";
+
+      const okSpan = infoModalOkBtn.querySelector("span") || infoModalOkBtn;
+      okSpan.textContent = okLabel;
 
       infoModalBackdrop.classList.add("active");
       infoModalBackdrop.setAttribute("aria-hidden", "false");
@@ -2844,6 +2923,10 @@
     function closeInfoModal() {
       infoModalBackdrop.classList.remove("active");
       infoModalBackdrop.setAttribute("aria-hidden", "true");
+      infoModalReloadOnOk = false;
+
+      const okSpan = infoModalOkBtn.querySelector("span") || infoModalOkBtn;
+      okSpan.textContent = "OK";
     }
 
     function openImageModal(src, altText) {
@@ -3096,6 +3179,9 @@
           ...cleanedItemData,
         };
 
+        // Try to determine payment URL from item first (optional column)
+        let paymentUrl = getPaymentLink(latestItem) || "";
+
         // Send to Pipedream
         try {
           const response = await fetch(CLAIM_WEBHOOK_URL, {
@@ -3110,22 +3196,80 @@
           if (!response.ok) {
             throw new Error("Failed to submit claim.");
           }
+
+          // NEW: Attempt to parse response and extract payment URL
+          try {
+            const contentType = response.headers.get("content-type") || "";
+            let parsed = null;
+
+            if (contentType.includes("application/json")) {
+              parsed = await response.json();
+            } else {
+              const text = await response.text();
+              try {
+                parsed = JSON.parse(text);
+              } catch (_) {
+                parsed = text;
+              }
+            }
+
+            const fromWebhook = extractPaymentUrl(parsed);
+            if (fromWebhook) {
+              paymentUrl = fromWebhook;
+            }
+          } catch (parseErr) {
+            // ignore parse errors; we may still have a payment link from the item
+            console.warn("Unable to parse webhook response for payment link:", parseErr);
+          }
         } catch (postError) {
           // Even if POST fails, show a generic message; Pipedream logs can be checked separately.
           console.error("Error posting claim to webhook:", postError);
         }
 
-        // Success UI — close claim modal, open info modal, then reload after 5s
+        // Success UI — close claim modal, open info modal (with payment link)
         closeClaimModal();
+
+        const title = getItemTitle(latestItem);
+        const priceLabel = getEmployeePrice(latestItem) || getFullPrice(latestItem);
+        const safeTitle = escapeHtml(title || "your item");
+        const safePrice = escapeHtml(priceLabel || "");
+        const safePaymentUrl = paymentUrl ? escapeAttr(paymentUrl) : "";
+
+        const paymentBlock = paymentUrl
+          ? `
+            <div style="margin-top: 12px; display:flex; gap:10px; flex-wrap:wrap;">
+              <a class="primary-btn" href="${safePaymentUrl}" target="_blank" rel="noopener">
+                <span>Pay now</span>
+              </a>
+              <a class="secondary-btn" href="${safePaymentUrl}" target="_blank" rel="noopener">
+                <span>Copy / open payment link</span>
+              </a>
+            </div>
+            <p class="helper-text" style="margin-top:10px;">
+              After payment, return to this tab and click <strong>Return to inventory</strong>.
+            </p>
+          `
+          : `
+            <p class="helper-text" style="margin-top:10px; color: var(--danger); font-weight: 600;">
+              Payment link unavailable.
+            </p>
+            <p class="helper-text" style="margin-top:6px;">
+              If you don’t see a payment link, please contact IT and reference this item.
+            </p>
+          `;
+
         openInfoModal({
-          title: "Claimed!",
+          title: "Claim submitted",
           contentHtml:
-            "<p>Claimed! You'll receive an email confirmation with more info regarding this item. Returning you to the home screen...</p>" +
-            '<p class="helper-text" style="margin-top:8px;">' +
-            "</p>",
-          autoReload: true,
-          reloadDelayMs: 5000,
-          hideOkButton: true,
+            `<p><strong>Claim submitted!</strong> You claimed <span class="highlight">${safeTitle}</span>` +
+            (safePrice ? ` for <span class="highlight">${safePrice}</span>.` : `.`) +
+            `</p>` +
+            `<p class="helper-text" style="margin-top:8px;">
+              Use the button below to complete payment. Your confirmation email will include pickup instructions.
+            </p>` +
+            paymentBlock,
+          okLabel: "Return to inventory",
+          reloadOnOk: true,
         });
       } catch (error) {
         console.error("Error submitting claim:", error);
@@ -3243,6 +3387,10 @@
 
     // Info modal OK button
     infoModalOkBtn.addEventListener("click", () => {
+      if (infoModalReloadOnOk) {
+        window.location.reload();
+        return;
+      }
       closeInfoModal();
     });
 
